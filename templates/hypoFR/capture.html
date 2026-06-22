@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Face Capture</title>
+  <style>
+    :root{
+      --bg:#f4f6f8;
+      --card:#fff;
+      --primary:#2c82f2;
+      --muted:#6b7280;
+    }
+    html,body{height:100%;margin:0;font-family:Inter, Arial, sans-serif;background:var(--bg)}
+    .container {
+      max-width: 900px;
+      margin: 24px auto;
+      padding: 16px;
+      background-color: var(--card);
+      border-radius: 12px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    h2{margin:0;font-size:1.2rem}
+    p{margin:0;color:var(--muted);font-size:0.95rem}
+
+    .video-wrapper{
+      position:relative;
+      width:100%;
+      overflow:hidden;
+      border-radius:12px;
+      background:#000;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      aspect-ratio: 4/3;
+    }
+
+    #cameraFeed{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      border-radius:12px;
+      -webkit-user-select:none;
+      user-select:none;
+      touch-action:none;
+    }
+
+    .overlay{
+      position:absolute;
+      left:12px;
+      top:12px;
+      display:flex;
+      gap:8px;
+      align-items:center;
+      pointer-events:none;
+    }
+
+    .badge{
+      background: rgba(0,0,0,0.6);
+      color:#fff;
+      padding:8px 12px;
+      border-radius:999px;
+      font-size:0.95rem;
+      min-width:120px;
+      text-align:center;
+    }
+
+    .message{
+      margin-top:8px;
+      font-size:1rem;
+      display:none;
+      padding:10px;
+      border-radius:8px;
+    }
+    #success{color:#065f46;background:#ecfdf5;border:1px solid #bbf7d0}
+    #error{color:#7f1d1d;background:#fff1f2;border:1px solid #fecaca}
+
+    /* Small instruction area */
+    .instructions{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      justify-content:space-between;
+      flex-wrap:wrap;
+      margin-top:8px;
+    }
+    .hint{color:var(--muted);font-size:0.9rem}
+
+    /* Friendly large CTA for mobile */
+    .controls{
+      display:flex;
+      gap:8px;
+      margin-top:6px;
+      flex-wrap:wrap;
+    }
+    .btn{
+      flex:1;
+      padding:10px 12px;
+      border-radius:10px;
+      border:none;
+      background:var(--primary);
+      color:white;
+      font-size:1rem;
+      text-align:center;
+      cursor:pointer;
+    }
+    .btn.ghost{background:#fff;border:1px solid #e6e6e6;color:#111}
+
+    @media(min-width:700px){
+      .container{margin:40px auto;padding:24px}
+      .controls{justify-content:flex-end;width:100%}
+      .btn{flex:initial}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Face Capture</h2>
+    <p>Keep only one face in view. We’ll auto-capture after a short countdown.</p>
+
+    <div class="video-wrapper" id="videoWrapper">
+      <img id="cameraFeed" src="{{ url_for('video_feed', student_id=student_id) }}" alt="Live camera feed" />
+      <div class="overlay">
+        <div id="badge" class="badge">Waiting for a single face…</div>
+      </div>
+    </div>
+
+    <div class="instructions">
+      <div class="hint">Tip: Hold phone at eye level. Good lighting helps.</div>
+      <div class="controls">
+        <button id="restartBtn" class="btn ghost">Restart Camera</button>
+        <button id="returnBtn" class="btn">Cancel</button>
+      </div>
+    </div>
+
+    <div id="success" class="message">Registration Successful! Redirecting…</div>
+    <div id="error" class="message">We couldn’t capture your face. Please try again.</div>
+  </div>
+
+  <script>
+    const badge = document.getElementById('badge');
+    const successMessage = document.getElementById('success');
+    const errorMessage = document.getElementById('error');
+    const cameraFeed = document.getElementById('cameraFeed');
+    const restartBtn = document.getElementById('restartBtn');
+    const returnBtn = document.getElementById('returnBtn');
+
+    const updateUI = (state, remaining = null) => {
+      switch (state) {
+        case 'pending':
+          badge.textContent = 'Waiting for a single face…';
+          break;
+
+        case 'countdown':
+          badge.textContent = `Capturing in ${remaining}…`;
+          break;
+
+        case 'done':
+          hideCamera();
+          successMessage.style.display = 'block';
+          setTimeout(() => window.location.href = '/', 1400);
+          break;
+
+        case 'error':
+          hideCamera();
+          errorMessage.style.display = 'block';
+          setTimeout(() => window.location.href = '/', 2000);
+          break;
+      }
+    };
+
+    const hideCamera = () => {
+      cameraFeed.src = '';
+      cameraFeed.style.display = 'none';
+      badge.textContent = '';
+    };
+
+    const pollStatus = async () => {
+      try {
+        const response = await fetch(`/status/{{ student_id }}`);
+        const data = await response.json();
+        updateUI(data.state, data.remaining);
+      } catch {
+        //  ignore
+      }
+    };
+
+    const pollInterval = setInterval(pollStatus, 400);
+
+    // Restart camera (ping server to start camera again). This will simply reload the img src.
+    restartBtn.addEventListener('click', () => {
+      cameraFeed.src = "{{ url_for('video_feed', student_id=student_id) }}" + "?r=" + Date.now();
+      cameraFeed.style.display = '';
+      successMessage.style.display = 'none';
+      errorMessage.style.display = 'none';
+      badge.textContent = 'Waiting for a single face…';
+    });
+
+    returnBtn.addEventListener('click', () => {
+      // stop camera on server
+      navigator.sendBeacon('/stop_camera');
+      window.location.href = '/';
+    });
+
+    setInterval(async () => {
+      try {
+        await fetch('/heartbeat', {method: 'POST'});
+      } catch (e) { /* ignore */ }
+    }, 5000);
+  </script>
+</body>
+</html>

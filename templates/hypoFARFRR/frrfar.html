@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Face Recognition System</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #ffffff;
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+      font-size: 18px;
+    }
+
+    .sidebar {
+      width: 450px;
+      background: #ffffff;
+      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow-y: auto;
+      border-right: 1px solid #e0e0e0;
+    }
+
+    .sidebar-header {
+      padding: 25px 20px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .sidebar-header h1 {
+      font-size: 36px;
+      color: #000000;
+      font-weight: 800;
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      padding: 10px 0;
+    }
+
+    .nav-item {
+      padding: 14px 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border-left: 3px solid transparent;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 26px;
+      color: #333333;
+    }
+
+    .nav-item:hover {
+      background: #f0f4f8;
+      border-left-color: #1e3a8a;
+      color: #1e3a8a;
+    }
+
+    .nav-item.active {
+      background: #e5edff;
+      border-left-color: #1e3a8a;
+      color: #1e3a8a;
+      font-weight: 700;
+    }
+
+    .nav-icon {
+      width: 18px;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .main-content {
+      flex: 1;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .content-section {
+      display: none;
+      height: 100%;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    .content-section.active {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card {
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 25px;
+      margin-bottom: 15px;
+    }
+
+    .card h2 {
+      color: #000000;
+      margin-bottom: 15px;
+      font-size: 32px;
+      font-weight: 700;
+    }
+
+    .card h3 {
+      color: #000000;
+      margin-top: 20px;
+      margin-bottom: 12px;
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .card p {
+      color: #333333;
+      line-height: 1.8;
+      margin-bottom: 10px;
+      font-size: 18px;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: #000000;
+      font-weight: 700;
+      font-size: 18px;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 14px 18px;
+      border: 2px solid #cccccc;
+      border-radius: 6px;
+      font-size: 18px;
+      transition: all 0.2s ease;
+      background: #ffffff;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: #1e3a8a;
+      box-shadow: 0 0 0 2px rgba(30, 58, 138, 0.1);
+    }
+
+    .btn {
+      padding: 14px 32px;
+      border: none;
+      border-radius: 6px;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-block;
+    }
+
+    .btn:disabled {
+      background: #e0e0e0 !important;
+      color: #999999 !important;
+      cursor: not-allowed;
+      transform: none !important;
+      box-shadow: none !important;
+    }
+
+    .btn-primary {
+      background: #1e3a8a;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #1e40af;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: #dc2626;
+      color: white;
+      margin-left: 10px;
+    }
+
+    .btn-secondary:hover {
+      background: #b91c1c;
+    }
+
+    .register_cancel_button {
+      background: #6b7280;
+      color: white;
+    }
+
+    .register_cancel_button:hover {
+      background: #4b5563;
+    }
+
+    .video-container {
+      text-align: center;
+      margin: 15px 0;
+    }
+
+    #cameraFeed {
+      max-width: 400px;
+      max-height: 400px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      margin-bottom: 15px;
+    }
+
+    #statusMessage {
+      font-size: 26px;
+      color: #1e3a8a;
+      margin-bottom: 15px;
+      font-weight: 700;
+    }
+
+    /* Modal Styles */
+    dialog {
+      border: 1px solid #cccccc;
+      border-radius: 8px;
+      padding: 0;
+      margin: auto;
+      max-width: 500px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    dialog::backdrop {
+      background: rgba(0, 0, 0, 0.6);
+    }
+
+    .modal-content {
+      padding: 30px;
+      text-align: center;
+      background: white;
+    }
+
+    .modal-content h2 {
+      color: #1e3a8a;
+      margin-bottom: 15px;
+      font-size: 22px;
+    }
+
+    #editFeed {
+      max-width: 100%;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      margin: 15px 0;
+    }
+
+    #countdown {
+      font-size: 24px;
+      font-weight: 700;
+      color: #dc2626;
+      margin: 10px 0;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin: 15px 0;
+    }
+
+    .stat-card {
+      background: #ffffff;
+      padding: 15px;
+      border-radius: 6px;
+      color: #333333;
+      text-align: center;
+      border: 1px solid #e0e0e0;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    }
+
+    .stat-label {
+      display: block;
+      font-size: 16px;
+      opacity: 0.8;
+      margin-bottom: 8px;
+      color: #666666;
+    }
+
+    .stat-value {
+      display: block;
+      font-size: 32px;
+      color: #000000;
+      font-weight: 700;
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 15px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 17px;
+    }
+
+    table caption {
+      font-size: 24px;
+      font-weight: 700;
+      color: #000000;
+      margin-bottom: 10px;
+      text-align: left;
+    }
+
+    table th,
+    table td {
+      padding: 12px 14px;
+      text-align: left;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    table th {
+      background: #f5f5f5;
+      color: #000000;
+      font-weight: 700;
+      font-size: 18px;
+    }
+
+    table tr:hover {
+      background: #fafafa;
+    }
+
+    .demographics-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-top: 10px;
+    }
+
+    /* Scrollbar styling */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #888;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h1>Face Recognition</h1>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-item active" data-section="instructions">
+        <span class="nav-icon">📋</span>
+        <span>Instructions & Summary</span>
+      </div>
+      <div class="nav-item" data-section="step1">
+        <span class="nav-icon">1️⃣</span>
+        <span>Register</span>
+      </div>
+      <div class="nav-item" data-section="step2">
+        <span class="nav-icon">2️⃣</span>
+        <span>Recognition</span>
+      </div>
+    </nav>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Instructions & Summary Section -->
+    <section class="content-section active" id="instructions">
+      <div class="card">
+        <h2>Welcome to Face Recognition System</h2>
+        <p>This system allows you to register faces and recognize them in real-time using advanced facial recognition
+          technology.</p>
+
+        <h3 style="margin-top: 30px; color: #667eea;">How to Use:</h3>
+        <p><strong>Step 1 - Registration:</strong> Enter your name, age, and gender, then capture your face using the
+          camera.</p>
+        <p><strong>Step 2 - Recognition:</strong> Use the live camera feed to recognize registered faces.</p>
+        <p><strong>Settings:</strong> Configure system preferences and view detailed statistics.</p>
+      </div>
+
+      <div class="card">
+        <h2>Settings & Filters</h2>
+        <h3 style="color: #667eea; margin-bottom: 20px;">Filter Options</h3>
+        <div class="filters">
+          <div class="form-group">
+            <label>Min Age</label>
+            <input type="number" class="min_age sum_filter" placeholder="Min Age">
+          </div>
+          <div class="form-group">
+            <label>Max Age</label>
+            <input type="number" class="max_age sum_filter" placeholder="Max Age">
+          </div>
+          <div class="form-group">
+            <label>Gender</label>
+            <select class="gender sum_filter">
+              <option value="all">All</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Scan Type</label>
+            <select class="is_register sum_filter">
+              <option value="all">All</option>
+              <option value="register">Registration</option>
+              <option value="recognize">Recognition</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Summary & Statistics</h2>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span class="stat-label">Total Tries</span>
+            <span class="stat-value total_tries">0</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Recognized</span>
+            <span class="stat-value recognized">0</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Unrecognized</span>
+            <span class="stat-value unrecognized">0</span>
+          </div>
+        </div>
+
+        <h3 style="margin-top: 30px; color: #667eea;">Resolution Errors</h3>
+        <div class="stats-grid">
+          <div class="stat-card" style="border-left: 4px solid #ff4b2b;">
+            <span class="stat-label">1440p Errors</span>
+            <span class="stat-value fail_1440p">0</span>
+          </div>
+          <div class="stat-card" style="border-left: 4px solid #ff4b2b;">
+            <span class="stat-label">1080p Errors</span>
+            <span class="stat-value fail_1080p">0</span>
+          </div>
+        </div>
+
+        <h3 style="margin-top: 30px; color: #667eea;">Detection Methods</h3>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span class="stat-label">Face Recognition</span>
+            <span class="stat-value face_recognition">0</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Dlib Detection</span>
+            <span class="stat-value dlib">0</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Avg Processing Speed</span>
+            <span class="stat-value average_frame_processing_speed">0</span>
+          </div>
+          <div class="stat-card" style="border-left: 4px solid #ff4b2b;">
+            <span class="stat-label">Accuracy Fails</span>
+            <span class="stat-value accuracy_fails">0</span>
+          </div>
+        </div>
+
+        <h3 style="margin-top: 30px; color: #667eea;">Demographics</h3>
+        <div class="demographics-container">
+          <div class="age_distribution"></div>
+          <div class="gender_distribution"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 1: Registration -->
+    <section class="content-section" id="step1">
+
+      <!-- Informed Consent -->
+      <div
+        style="background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 25px; margin-bottom: 15px;">
+        <h2 style="font-size: 32px; font-weight: 700; margin-bottom: 15px;">Informed Consent</h2>
+        <ul style="padding-left: 20px; line-height: 1.8; font-size: 18px;">
+          <li>Your facial image will be discarded immediately after biometric template creation.</li>
+          <li>Your biometric template will be collected for school security purposes.</li>
+          <li>Data is stored locally and never shared externally.</li>
+          <li>Only authorized staff can access your data.</li>
+          <li>Data is deleted when you leave the school.</li>
+          <li>You may withdraw consent or request deletion anytime.</li>
+          <li>For students under 18, parental consent is required.</li>
+        </ul>
+      </div>
+
+      <!-- Registration Form -->
+      <div class="card">
+        <h2>Register New User</h2>
+        <form id="registration-form">
+          <div class="form-group">
+            <label for="name">Enter your full name</label>
+            <input type="text" id="name" name="name" placeholder="Enter your full name" required>
+          </div>
+
+          <div class="form-group">
+            <label for="age">Age</label>
+            <input type="number" id="age" name="age" placeholder="Enter your age" required>
+          </div>
+
+          <div class="form-group">
+            <label for="gender">Gender</label>
+            <select id="gender" name="gender" required>
+              <option value="">Select Gender</option>
+              <option>Male</option>
+              <option>Female</option>
+            </select>
+          </div>
+
+          <div>
+            <button type="submit" class="btn btn-primary" id="submitBtn">Register</button>
+            <button type="button" class="btn btn-secondary register_cancel_button">Cancel</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Registered Users</h2>
+        <table id="usersTable">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Age</th>
+              <th>Gender</th>
+              <th>Photo</th>
+              <th>Remove</th>
+            </tr>
+          </thead>
+          <tbody>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Step 2: Recognition -->
+    <section class="content-section" id="step2">
+      <div class="card">
+        <h2>Face Recognition</h2>
+        <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
+          <!-- Camera Feed -->
+          <div class="video-container" style="flex: 0 0 auto;">
+            <h3 id="statusMessage">Please look at the camera</h3>
+            <img id="cameraFeed" src="/recog_feed" alt="Live feed" />
+            <div style="margin-top: 15px;">
+              <button id="recognizeBtn" class="btn btn-primary">Recognize Face</button>
+            </div>
+            <div class="form-group" style="margin-top: 15px; text-align: left;">
+              <label>Camera Resolution</label>
+              <select id="resolutionInput" style="width: 100%; padding: 10px; border-radius: 6px; border: 2px solid #ccc; font-size: 16px;">
+                <option value="1440p">1440p</option>
+                <option value="1080p">1080p</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- FPS Line Graph -->
+          <div style="flex: 1 1 400px; min-width: 350px; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; background: #fff; position: relative;">
+            <h3 style="text-align: center; font-size: 18px; font-weight: 700; color: #000; margin-bottom: 10px;">System Baseline Stability (FPS over Time)</h3>
+            <svg id="fpsChart" viewBox="0 0 520 310" style="width: 100%; height: auto; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+              <!-- Background -->
+              <rect x="60" y="20" width="430" height="220" fill="#ffffff" stroke="#e0e0e0" stroke-width="1"/>
+
+              <!-- Grid lines (horizontal) -->
+              <g id="fpsGridLines" stroke="#f0f0f0" stroke-width="0.5"></g>
+
+              <!-- Y-axis labels -->
+              <g id="fpsYLabels" fill="#666" font-size="11" text-anchor="end"></g>
+
+              <!-- Y-axis title -->
+              <text x="15" y="130" fill="#333" font-size="11" font-weight="700" text-anchor="middle" transform="rotate(-90, 15, 130)">Frames Per Second (FPS)</text>
+
+              <!-- X-axis title -->
+              <text x="275" y="290" fill="#333" font-size="11" font-weight="700" text-anchor="middle">Time</text>
+
+              <!-- X-axis labels (dynamic) -->
+              <g id="fpsXLabels" fill="#666" font-size="10" text-anchor="middle"></g>
+
+              <!-- FPS data line -->
+              <polyline id="fpsLine" fill="none" stroke="#1e3a8a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points=""/>
+
+              <!-- FPS data dots -->
+              <g id="fpsDots"></g>
+
+              <!-- Axes -->
+              <line x1="60" y1="20" x2="60" y2="240" stroke="#333" stroke-width="1.5"/>
+              <line x1="60" y1="240" x2="490" y2="240" stroke="#333" stroke-width="1.5"/>
+
+              <!-- Hover tooltip (hidden by default) -->
+              <g id="fpsTooltip" style="display: none; pointer-events: none;">
+                <rect id="fpsTooltipBg" rx="4" ry="4" fill="rgba(0,0,0,0.8)" width="120" height="40"/>
+                <text id="fpsTooltipTime" x="8" y="16" fill="#fff" font-size="10"></text>
+                <text id="fpsTooltipVal" x="8" y="32" fill="#4ade80" font-size="12" font-weight="700"></text>
+              </g>
+            </svg>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+              <p id="fpsAvgLabel" style="font-size: 15px; font-weight: 600; color: #000; margin: 0;">Average FPS: --</p>
+              <button id="fpsEnlargeBtn" class="btn btn-primary" style="padding: 6px 16px; font-size: 14px;">⛶ Enlarge</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Recognition Log</h2>
+        <table id="recognizedList">
+        </table>
+      </div>
+    </section>
+
+
+
+
+  </div>
+
+  <!-- Camera Modal -->
+  <dialog id="editDialog">
+    <div class="modal-content">
+      <h2>Please look at the camera</h2>
+      <p id="countdown"></p>
+      <img id="editFeed" alt="Live feed" />
+    </div>
+  </dialog>
+
+  <!-- FPS Enlarge Modal -->
+  <dialog id="fpsEnlargeDialog" style="border: 1px solid #ccc; border-radius: 8px; padding: 0; margin: auto; width: 90vw; max-width: 1200px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+    <div style="padding: 20px; background: white;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: #000;">System Baseline Stability (FPS over Time)</h2>
+        <button id="fpsEnlargeClose" class="btn" style="background: #6b7280; color: white; padding: 8px 20px; font-size: 16px;">✕ Close</button>
+      </div>
+      <svg id="fpsChartLarge" viewBox="0 0 1100 500" style="width: 100%; height: auto; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+        <rect x="70" y="20" width="1000" height="420" fill="#ffffff" stroke="#e0e0e0" stroke-width="1"/>
+        <g id="fpsGridLinesLarge" stroke="#f0f0f0" stroke-width="0.5"></g>
+        <g id="fpsYLabelsLarge" fill="#666" font-size="13" text-anchor="end"></g>
+        <text x="20" y="230" fill="#333" font-size="13" font-weight="700" text-anchor="middle" transform="rotate(-90, 20, 230)">Frames Per Second (FPS)</text>
+        <text x="570" y="490" fill="#333" font-size="13" font-weight="700" text-anchor="middle">Time</text>
+        <g id="fpsXLabelsLarge" fill="#666" font-size="12" text-anchor="middle"></g>
+        <polyline id="fpsLineLarge" fill="none" stroke="#1e3a8a" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" points=""/>
+        <g id="fpsDotsLarge"></g>
+        <line x1="70" y1="20" x2="70" y2="440" stroke="#333" stroke-width="1.5"/>
+        <line x1="70" y1="440" x2="1070" y2="440" stroke="#333" stroke-width="1.5"/>
+        <g id="fpsTooltipLarge" style="display: none; pointer-events: none;">
+          <rect id="fpsTooltipBgLarge" rx="4" ry="4" fill="rgba(0,0,0,0.85)" width="140" height="45"/>
+          <text id="fpsTooltipTimeLarge" x="10" y="18" fill="#fff" font-size="12"></text>
+          <text id="fpsTooltipValLarge" x="10" y="37" fill="#4ade80" font-size="14" font-weight="700"></text>
+        </g>
+      </svg>
+      <p id="fpsAvgLabelLarge" style="text-align: center; font-size: 16px; font-weight: 600; color: #000; margin-top: 15px;">Average FPS: --</p>
+    </div>
+  </dialog>
+
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  <script>
+    // Camera resolution logic
+    const resolutionInput = document.getElementById("resolutionInput");
+    if (resolutionInput) {
+      async function loadResolution() {
+        try {
+          const rRes = await fetch('/get_resolution');
+          const rJson = await rRes.json();
+          if (rJson && rJson.resolution) {
+            resolutionInput.value = rJson.resolution;
+          }
+        } catch (e) {
+          console.warn('Could not load resolution', e);
+        }
+      }
+      loadResolution();
+
+      resolutionInput.addEventListener("change", async () => {
+        try {
+          await fetch("/set_resolution", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ resolution: resolutionInput.value })
+          });
+        } catch (e) {
+          console.error("Failed to set resolution", e);
+        }
+      });
+    }
+
+    // Sidebar navigation - intervals removed in favor of SSE
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', function () {
+        document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+        document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
+        this.classList.add('active');
+        const sectionId = this.getAttribute('data-section');
+        document.getElementById(sectionId).classList.add('active');
+        if (sectionId === 'step1') {
+          fetchUsers();
+        } else if (sectionId === 'step2') {
+          fetchRecognized();
+        } else if (sectionId === 'instructions' || sectionId === 'settings') {
+          fetchStats();
+          fetchAgeDistribution();
+          fetchGenderDistribution();
+        }
+      });
+    });
+
+    fetchStats();
+    fetchAgeDistribution();
+    fetchGenderDistribution();
+
+    // =============== FPS CHART ===============
+    let fpsInterval = null;
+    let lastFpsData = null;
+
+    function formatTime(minutes) {
+      const totalSec = Math.round(minutes * 60);
+      if (totalSec < 60) return `${totalSec}s`;
+      const h = Math.floor(totalSec / 3600);
+      const m = Math.floor((totalSec % 3600) / 60);
+      const s = totalSec % 60;
+      if (h > 0) return s > 0 ? `${h}h ${m}m ${s}s` : (m > 0 ? `${h}h ${m}m` : `${h}h`);
+      return s > 0 ? `${m}m ${s}s` : `${m}m`;
+    }
+
+    function safeMin(arr) {
+      return arr.reduce((a, b) => a < b ? a : b, arr[0]);
+    }
+    function safeMax(arr) {
+      return arr.reduce((a, b) => a > b ? a : b, arr[0]);
+    }
+
+    function renderFpsChart(data, config) {
+      const {
+        lineEl, dotsEl, xLabelsEl, yLabelsEl, gridLinesEl, tooltipEl,
+        tooltipBgEl, tooltipTimeEl, tooltipValEl, avgLabelEl, svgEl,
+        chartLeft, chartRight, chartTop, chartBottom, isLarge
+      } = config;
+
+      const chartWidth = chartRight - chartLeft;
+      const chartHeight = chartBottom - chartTop;
+
+      if (!lineEl || !data.values || data.values.length === 0) {
+        if (avgLabelEl) avgLabelEl.textContent = 'Average FPS: No data yet';
+        return;
+      }
+
+      // Dynamic Y range (use safe reduce, not spread)
+      const minFps = safeMin(data.values);
+      const maxFps = safeMax(data.values);
+      const padding = 2;
+      const yMin = Math.floor(minFps - padding);
+      const yMax = Math.ceil(maxFps + padding);
+      const yRange = yMax - yMin || 1;
+
+      function yPos(val) {
+        return chartBottom - ((val - yMin) / yRange) * chartHeight;
+      }
+
+      // X range (use safe reduce, not spread)
+      const minTime = safeMin(data.times);
+      const maxTime = safeMax(data.times);
+      const timeRange = maxTime - minTime || 0.0167;
+
+      function xPos(t) {
+        return chartLeft + ((t - minTime) / timeRange) * chartWidth;
+      }
+
+      // Limit points for rendering
+      const maxPoints = isLarge ? 360 : 120;
+      const startIdx = Math.max(0, data.values.length - maxPoints);
+
+      // Compute the 6 label time positions (evenly spaced)
+      const numLabels = 6;
+      const totalTimeMin = maxTime - minTime;
+      const labelTimes = [];
+      for (let i = 0; i <= numLabels; i++) {
+        labelTimes.push(minTime + (totalTimeMin * i / numLabels));
+      }
+
+      // For enlarged view with >5 min data, scale the interval to avoid overlap
+      const enlargedLabels = [];
+      if (isLarge && totalTimeMin > 5) {
+        // Aim for about 10-12 labels maximum on the large chart
+        let intervalMins = 1;
+        if (totalTimeMin > 120) intervalMins = 15; // > 2 hours -> every 15 mins
+        else if (totalTimeMin > 60) intervalMins = 10; // > 1 hour -> every 10 mins
+        else if (totalTimeMin > 30) intervalMins = 5;  // > 30 mins -> every 5 mins
+        else if (totalTimeMin > 15) intervalMins = 2;  // > 15 mins -> every 2 mins
+
+        // Start from 0, go up to maxTime in increments of intervalMins
+        const minRounded = Math.floor(minTime);
+        for (let m = minRounded; m <= Math.ceil(maxTime); m += intervalMins) {
+          if (m >= minTime && m <= maxTime + 0.01) {
+            enlargedLabels.push(m);
+          }
+        }
+      }
+
+      const activeLabelTimes = (isLarge && totalTimeMin > 5) ? enlargedLabels : labelTimes;
+
+      // Find exactly one dot index closest to each label time
+      const visibleDotIndices = new Set();
+      activeLabelTimes.forEach(lt => {
+        let closestIdx = -1;
+        let minDiff = Infinity;
+        for (let i = startIdx; i < data.values.length; i++) {
+          const diff = Math.abs(data.times[i] - lt);
+          if (diff < minDiff) {
+            minDiff = diff;
+            closestIdx = i;
+          }
+        }
+        if (closestIdx !== -1) {
+          visibleDotIndices.add(closestIdx);
+        }
+      });
+
+      // Build polyline + dots (invisible by default, visible at label positions)
+      let points = '';
+      let dotsHtml = '';
+
+      for (let i = startIdx; i < data.values.length; i++) {
+        const x = xPos(data.times[i]);
+        const y = yPos(data.values[i]);
+        points += `${x},${y} `;
+
+        const dotR = isLarge ? 4 : 3;
+
+        if (visibleDotIndices.has(i)) {
+          // Visible dot only at exact label position matches
+          dotsHtml += `<circle cx="${x}" cy="${y}" r="${dotR}" fill="#1e3a8a" data-idx="${i}" style="cursor:pointer;"/>`;
+        }
+        // Invisible hover hit-area for ALL points (larger radius, transparent)
+        dotsHtml += `<circle cx="${x}" cy="${y}" r="${isLarge ? 8 : 6}" fill="transparent" data-idx="${i}" style="cursor:pointer;" class="fps-hover-dot"/>`;
+      }
+
+      lineEl.setAttribute('points', points.trim());
+      dotsEl.innerHTML = dotsHtml;
+
+      // Y-axis labels + grid
+      const ySteps = isLarge ? 8 : 6;
+      let yLabelsHtml = '';
+      let gridHtml = '';
+      for (let i = 0; i <= ySteps; i++) {
+        const val = yMin + (yRange * i / ySteps);
+        const y = chartBottom - (i / ySteps) * chartHeight;
+        yLabelsHtml += `<text x="${chartLeft - 5}" y="${y + 4}">${val.toFixed(0)}</text>`;
+        if (i > 0 && i < ySteps) {
+          gridHtml += `<line x1="${chartLeft}" y1="${y}" x2="${chartRight}" y2="${y}"/>`;
+        }
+      }
+      yLabelsEl.innerHTML = yLabelsHtml;
+      gridLinesEl.innerHTML = gridHtml;
+
+      // X-axis labels
+      let xLabelsHtml = '';
+      const usedLabels = (isLarge && totalTimeMin > 5) ? enlargedLabels : labelTimes;
+      for (let j = 0; j < usedLabels.length; j++) {
+        const t = usedLabels[j];
+        const x = xPos(t);
+        // Position labels carefully: large chart has more padding, small chart needs them higher up
+        const textY = isLarge ? chartBottom + 18 : chartBottom + 14;
+        xLabelsHtml += `<text x="${x}" y="${textY}">${formatTime(t)}</text>`;
+      }
+      xLabelsEl.innerHTML = xLabelsHtml;
+
+      // Average label
+      if (avgLabelEl) {
+        avgLabelEl.textContent = `Average FPS: ${data.avg}`;
+      }
+
+      // Hover tooltip logic on invisible hit-areas
+      if (tooltipEl) {
+        dotsEl.querySelectorAll('.fps-hover-dot').forEach(dot => {
+          dot.addEventListener('mouseenter', (e) => {
+            const idx = parseInt(e.target.dataset.idx);
+            if (isNaN(idx) || !data.times[idx]) return;
+            const t = data.times[idx];
+            const v = data.values[idx];
+            tooltipTimeEl.textContent = `Time: ${formatTime(t)}`;
+            tooltipValEl.textContent = `FPS: ${v.toFixed(2)}`;
+
+            const cx = parseFloat(e.target.getAttribute('cx'));
+            const cy = parseFloat(e.target.getAttribute('cy'));
+            let tx = cx + 12;
+            let ty = cy - 48;
+
+            const ttWidth = isLarge ? 140 : 120;
+            if (tx + ttWidth > chartRight) tx = cx - ttWidth - 12;
+            if (ty < chartTop) ty = cy + 12;
+
+            tooltipEl.setAttribute('transform', `translate(${tx}, ${ty})`);
+            tooltipEl.style.display = '';
+          });
+
+          dot.addEventListener('mouseleave', () => {
+            tooltipEl.style.display = 'none';
+          });
+        });
+      }
+    }
+
+    async function updateFpsChart() {
+      try {
+        const res = await fetch('/fps_data');
+        const data = await res.json();
+        lastFpsData = data;
+
+        // Render small chart
+        renderFpsChart(data, {
+          lineEl: document.getElementById('fpsLine'),
+          dotsEl: document.getElementById('fpsDots'),
+          xLabelsEl: document.getElementById('fpsXLabels'),
+          yLabelsEl: document.getElementById('fpsYLabels'),
+          gridLinesEl: document.getElementById('fpsGridLines'),
+          tooltipEl: document.getElementById('fpsTooltip'),
+          tooltipBgEl: document.getElementById('fpsTooltipBg'),
+          tooltipTimeEl: document.getElementById('fpsTooltipTime'),
+          tooltipValEl: document.getElementById('fpsTooltipVal'),
+          avgLabelEl: document.getElementById('fpsAvgLabel'),
+          svgEl: document.getElementById('fpsChart'),
+          chartLeft: 60, chartRight: 490, chartTop: 20, chartBottom: 240,
+          isLarge: false
+        });
+
+        // If enlarged dialog is open, also update it
+        const enlargeDialog = document.getElementById('fpsEnlargeDialog');
+        if (enlargeDialog && enlargeDialog.open) {
+          renderFpsChart(data, {
+            lineEl: document.getElementById('fpsLineLarge'),
+            dotsEl: document.getElementById('fpsDotsLarge'),
+            xLabelsEl: document.getElementById('fpsXLabelsLarge'),
+            yLabelsEl: document.getElementById('fpsYLabelsLarge'),
+            gridLinesEl: document.getElementById('fpsGridLinesLarge'),
+            tooltipEl: document.getElementById('fpsTooltipLarge'),
+            tooltipBgEl: document.getElementById('fpsTooltipBgLarge'),
+            tooltipTimeEl: document.getElementById('fpsTooltipTimeLarge'),
+            tooltipValEl: document.getElementById('fpsTooltipValLarge'),
+            avgLabelEl: document.getElementById('fpsAvgLabelLarge'),
+            svgEl: document.getElementById('fpsChartLarge'),
+            chartLeft: 70, chartRight: 1070, chartTop: 20, chartBottom: 440,
+            isLarge: true
+          });
+        }
+
+      } catch (e) {
+        console.error('FPS chart error:', e);
+      }
+    }
+
+    function startFpsPolling() {
+      if (fpsInterval) return;
+      updateFpsChart();
+      fpsInterval = setInterval(updateFpsChart, 2000);
+    }
+
+    function stopFpsPolling() {
+      if (fpsInterval) {
+        clearInterval(fpsInterval);
+        fpsInterval = null;
+      }
+    }
+
+    // Enlarge button
+    document.getElementById('fpsEnlargeBtn').addEventListener('click', () => {
+      const dialog = document.getElementById('fpsEnlargeDialog');
+      dialog.showModal();
+      if (lastFpsData) {
+        renderFpsChart(lastFpsData, {
+          lineEl: document.getElementById('fpsLineLarge'),
+          dotsEl: document.getElementById('fpsDotsLarge'),
+          xLabelsEl: document.getElementById('fpsXLabelsLarge'),
+          yLabelsEl: document.getElementById('fpsYLabelsLarge'),
+          gridLinesEl: document.getElementById('fpsGridLinesLarge'),
+          tooltipEl: document.getElementById('fpsTooltipLarge'),
+          tooltipBgEl: document.getElementById('fpsTooltipBgLarge'),
+          tooltipTimeEl: document.getElementById('fpsTooltipTimeLarge'),
+          tooltipValEl: document.getElementById('fpsTooltipValLarge'),
+          avgLabelEl: document.getElementById('fpsAvgLabelLarge'),
+          svgEl: document.getElementById('fpsChartLarge'),
+          chartLeft: 70, chartRight: 1070, chartTop: 20, chartBottom: 440,
+          isLarge: true
+        });
+      }
+    });
+
+    document.getElementById('fpsEnlargeClose').addEventListener('click', () => {
+      document.getElementById('fpsEnlargeDialog').close();
+    });
+
+    // Start/stop FPS polling when switching tabs
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', function () {
+        const sectionId = this.getAttribute('data-section');
+        if (sectionId === 'step2') {
+          startFpsPolling();
+        } else {
+          stopFpsPolling();
+        }
+      });
+    });
+  </script>
+
+</body>
+
+</html>

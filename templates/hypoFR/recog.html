@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Face Recognition</title>
+  <style>
+    body {
+      font-family: Arial;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 0;
+    }
+
+    .wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 16px;
+    }
+
+    @media(min-width: 768px) {
+      .wrapper {
+        flex-direction: row;
+      }
+    }
+
+    .left {
+      flex: 1;
+    }
+
+    .right {
+      width: 100%;
+      max-width: 360px;
+      background: #fff;
+      border-radius: 8px;
+      padding: 12px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+      overflow-y: auto;
+      max-height: 80vh;
+    }
+
+    #cameraFeed {
+      width: 100%;
+      height: auto;
+      object-fit: contain;
+      border-radius: 10px;
+      background: black;
+    }
+
+    .recog-item {
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .recog-item h4 {
+      margin: 0 0 6px 0;
+      font-size: 16px;
+    }
+
+    .recog-item time {
+      font-size: 13px;
+      color: #666;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      padding: 6px;
+      margin-bottom: 12px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 0.9rem;
+    }
+
+    .small {
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    .matches-list {
+      margin-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .badge-ignored {
+      color: #b45309;
+      font-weight: 600;
+    }
+
+    /* orange-ish */
+    .badge-unknown {
+      color: #9b1c1c;
+      font-weight: 600;
+    }
+
+    /* red-ish */
+    .badge-recognized {
+      color: #0b6623;
+      font-weight: 600;
+    }
+
+    /* green-ish */
+  </style>
+</head>
+
+<body>
+
+  <div class="wrapper">
+    <div class="left">
+      <h2>Live Face Recognition</h2>
+      <img id="cameraFeed" src="/recog_feed" alt="Live feed" />
+      <div style="margin-top:8px;">
+        <label>Recognition Threshold (0.0 - 1.0)</label>
+        <input type="number" id="thresholdInput" value="0.50" step="0.01" min="0" max="1" />
+      </div>
+
+      <div style="margin-top:6px;">
+        <label>Minimum Face Box Height (px)</label>
+        <input type="number" id="minFaceHeightInput" value="120" min="20" max="2000" />
+        <div class="small">Faces smaller than this height are ignored. Default: 120 px.</div>
+      </div>
+
+      <div style="margin-top:6px;">
+        <label>Camera Resolution</label>
+        <select id="resolutionInput" style="width: 100%; padding: 6px; margin-bottom: 12px; border-radius: 6px; border: 1px solid #ccc; font-size: 0.9rem; background-color: #fff;">
+          <option value="1440p">1440p</option>
+          <option value="1080p">1080p</option>
+        </select>
+        <div class="small">Changes camera resolution dynamically.</div>
+      </div>
+
+      <div id="matches" class="matches-list" aria-live="polite"></div>
+    </div>
+  </div>
+  {% include 'components/dialogs.html' %}
+
+  <script>
+    const thresholdInput = document.getElementById("thresholdInput");
+    const minFaceHeightInput = document.getElementById("minFaceHeightInput");
+    const resolutionInput = document.getElementById("resolutionInput");
+    const matchesDiv = document.getElementById("matches");
+
+    async function loadSettings() {
+      try {
+        const tRes = await fetch('/get_threshold');
+        const tJson = await tRes.json();
+        if (tJson && typeof tJson.threshold !== 'undefined') {
+          thresholdInput.value = Number(tJson.threshold).toFixed(2);
+        }
+      } catch (e) {
+        console.warn('Could not load threshold', e);
+      }
+
+      try {
+        const mRes = await fetch('/get_min_face_height');
+        const mJson = await mRes.json();
+        if (mJson && typeof mJson.min_height !== 'undefined') {
+          minFaceHeightInput.value = parseInt(mJson.min_height);
+        }
+      } catch (e) {
+        console.warn('Could not load min face height', e);
+      }
+
+      try {
+        const rRes = await fetch('/get_resolution');
+        const rJson = await rRes.json();
+        if (rJson && rJson.resolution) {
+          resolutionInput.value = rJson.resolution;
+        }
+      } catch (e) {
+        console.warn('Could not load resolution', e);
+      }
+    }
+    loadSettings();
+
+    thresholdInput.addEventListener("change", async () => {
+      let val = parseFloat(thresholdInput.value);
+      if (isNaN(val) || val < 0) val = 0; if (val > 1) val = 1;
+      thresholdInput.value = val.toFixed(2);
+      try {
+        await fetch("/set_threshold", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ threshold: val }) });
+      } catch (e) { console.error(e); }
+    });
+
+    minFaceHeightInput.addEventListener("change", async () => {
+      let val = parseInt(minFaceHeightInput.value);
+      if (isNaN(val) || val < 20) val = 20;
+      if (val > 2000) val = 2000;
+      minFaceHeightInput.value = val;
+      try {
+        await fetch("/set_min_face_height", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ min_height: val })
+        });
+      } catch (e) {
+        console.error("Failed to set min face height", e);
+      }
+    });
+
+    resolutionInput.addEventListener("change", async () => {
+      try {
+        await fetch("/set_resolution", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ resolution: resolutionInput.value })
+        });
+      } catch (e) {
+        console.error("Failed to set resolution", e);
+      }
+    });
+
+    async function pollMatches() {
+      try {
+        const res = await fetch("/status_recog");
+        const data = await res.json();
+        matchesDiv.innerHTML = "";
+        if (Array.isArray(data) && data.length) {
+          // Check for no_detection special case from backend
+          if (data.length === 1 && data[0].reason === 'no_detection') {
+            matchesDiv.innerHTML = "<div class='recog-item' style='justify-content:center; color:#555;'><strong>Mam/Ser, ngiti naman po jan!</strong></div>";
+            return;
+          }
+
+          data.forEach(m => {
+            const el = document.createElement("div");
+            el.className = "recog-item";
+            const left = document.createElement("div");
+            left.style.display = 'flex';
+            left.style.flexDirection = 'column';
+
+            const title = document.createElement("div");
+            title.style.fontWeight = '600';
+            let subtitleText = '';
+
+            if (m.reason === 'min_face_height' || (m.name && m.name.includes("Too Small"))) {
+              title.textContent = "Too Small – Ignored";
+              title.className = 'badge-ignored';
+              subtitleText = `Box h: ${m.box_height || '-'} px`;
+            } else if (m.recognized) {
+              title.textContent = `${m.name || 'Unknown'} - You have been recognized!`;
+              title.className = 'badge-recognized';
+              subtitleText = `Accuracy: ${m.accuracy || 0}%`;
+            } else {
+              title.textContent = "Who are you?";
+              title.className = 'badge-unknown';
+              subtitleText = m.box_height ? `Box h: ${m.box_height}px` : '';
+            }
+
+            const subtitle = document.createElement("div");
+            subtitle.className = 'small';
+            subtitle.textContent = subtitleText;
+
+            left.appendChild(title);
+            left.appendChild(subtitle);
+            el.appendChild(left);
+
+            matchesDiv.appendChild(el);
+          });
+        } else {
+          // Custom "Jam" message when idle
+          matchesDiv.innerHTML = "<div class='recog-item' style='justify-content:center; color:#555;'><strong>Mam/Ser, ngiti naman po jan!</strong></div>";
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+    setInterval(pollMatches, 1000);
+    pollMatches();
+
+    setInterval(async () => { try { await fetch("/heartbeat", { method: "POST" }); } catch { } }, 5000);
+  </script>
+</body>
+
+</html>

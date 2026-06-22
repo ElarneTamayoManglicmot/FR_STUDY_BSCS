@@ -1,0 +1,7 @@
+CREATE USER 'krit'@'localhost' IDENTIFIED BY 'FUCK';
+GRANT ALL PRIVILEGES ON thesis.* TO 'krit'@'localhost';
+FLUSH PRIVILEGES;
+
+Access denied for user 'root'@'localhost'	Check MySQL user and password in db_connection.py
+Can't connect to MySQL server on 'localhost'	Make sure MySQL is running in XAMPP Control Panel
+Port 3306 already in use	Change MySQL port in XAMPP or stop other MySQL services

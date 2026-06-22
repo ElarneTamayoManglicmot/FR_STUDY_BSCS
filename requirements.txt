@@ -1,0 +1,7 @@
+flask
+numpy
+opencv-python
+face_recognition
+pymysql
+shapely
+setuptools

@@ -1,0 +1,66 @@
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<dialog id="cameraContainer">
+    <h2>Camera Feed</h2>
+    <img id="cameraFeed" src="/video_feed" width="720" height="560" />
+</dialog>
+
+<dialog id="registerDialog">
+    <form method="POST" id="registration-form">
+        <h2>Registration</h2>
+
+        <input type="text" name="name" placeholder="Name" required>
+        <input type="number" name="age" placeholder="Age" required>
+        <input type="text" name="course" placeholder="Course" required>
+
+        <select name="gender" required>
+            <option value="">Select Gender</option>
+            <option>Male</option>
+            <option>Female</option>
+            <option>Other</option>
+        </select>
+
+        <menu>
+            <button id="submitBtn" value="submit">Submit</button>
+            <button type="button" value="cancel" class="register_cancel_button">Cancel</button>
+        </menu>
+    </form>
+</dialog>
+
+<dialog id="recognizedDialog">
+    <h2>Recognized Faces Today</h2>
+    <table id="recognizedTable">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Accuracy</th>
+                <th>Processing Speed</th>
+                <th>Seen At</th>
+            </tr>
+        </thead>
+        <tbody id="recognizedList">
+
+        </tbody>
+    </table>
+    <menu>
+        <button type="button" id="closeRecognized">Close</button>
+    </menu>
+</dialog>
+
+<dialog id="usersDialog">
+    <div>
+        <h2>User List</h2>
+        <table id="usersTable">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Gender</th>
+                    <th>Course</th>
+                    <th>Age</th>
+                    <th>Created At</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</dialog>
+<script src="{{ url_for('static', filename='js/modal.js') }}"></script>

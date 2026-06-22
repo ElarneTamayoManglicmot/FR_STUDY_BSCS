@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Face Recognition</title>
+  <style>
+    body {
+      font-family: Arial;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 0;
+    }
+
+    .wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 16px;
+    }
+
+    @media(min-width: 768px) {
+      .wrapper {
+        flex-direction: row;
+      }
+    }
+
+    .left {
+      flex: 1;
+    }
+
+    .right {
+      width: 100%;
+      max-width: 360px;
+      background: #fff;
+      border-radius: 8px;
+      padding: 12px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+      overflow-y: auto;
+      max-height: 80vh;
+    }
+
+    #cameraFeed {
+      width: 50%;
+      height: auto;
+      object-fit: contain;
+      border-radius: 10px;
+      background: black;
+    }
+
+    .recog-item {
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .recog-item h4 {
+      margin: 0 0 6px 0;
+      font-size: 16px;
+    }
+
+    .recog-item time {
+      font-size: 13px;
+      color: #666;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      padding: 6px;
+      margin-bottom: 12px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 0.9rem;
+    }
+
+    .small {
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    .matches-list {
+      margin-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .badge-ignored {
+      color: #b45309;
+      font-weight: 600;
+    }
+
+    /* orange-ish */
+    .badge-unknown {
+      color: #9b1c1c;
+      font-weight: 600;
+    }
+
+    /* red-ish */
+    .badge-recognized {
+      color: #0b6623;
+      font-weight: 600;
+    }
+
+    /* green-ish */
+  </style>
+</head>
+
+<body>
+
+  <div class="wrapper">
+    <div class="left">
+      <h2>Live Face Recognition</h2>
+      <img id="cameraFeed" src="/frame_feed" alt="Live feed" />
+    </div>
+    <div>
+      <p>Total Accepted: <span id="accepted"></span></p>
+      <p>Total Unaccepted: <span id="rejected"></span></p>
+    </div>
+    <div class="right">
+      <div class="header">
+        <h3>Recognized Today</h3><small id="lastUpdate">--</small>
+      </div>
+      <div id="recognizedList"></div>
+    </div>
+    <script>
+
+      async function fetchRecognized() {
+        try {
+          const res = await fetch("/recognized_today");
+          const data = await res.json();
+          const container = document.getElementById("recognizedList");
+          container.innerHTML = "";
+          data.forEach(item => {
+            const div = document.createElement("div");
+            div.className = "recog-item";
+            const left = document.createElement("div");
+            left.style.display = 'flex';
+            left.style.flexDirection = 'column';
+            const h = document.createElement("h4");
+            h.textContent = item.name + " - " + item.processing_speed;
+            const t = document.createElement("time");
+            t.textContent = item.seen_at;
+            left.appendChild(h); left.appendChild(t);
+            div.appendChild(left);
+            container.appendChild(div);
+          });
+          document.getElementById("lastUpdate").textContent = new Date().toLocaleTimeString();
+        } catch (e) { console.error(e); }
+      }
+      setInterval(fetchRecognized, 1000); fetchRecognized();
+      
+      async function fetchStats() {
+        try {
+          const res = await fetch("/recognition_stats");
+          const data = await res.json();
+
+          document.getElementById("accepted").textContent = data.recognized;
+          document.getElementById("rejected").textContent = data.unrecognized;
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      setInterval(fetchStats, 1000);
+      fetchStats();
+    </script>
+    {% include 'components/dialogs.html' %}
+</body>
+
+</html>

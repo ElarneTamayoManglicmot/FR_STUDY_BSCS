@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>A EYE Consent Form</title>
+  <style>
+    :root{
+      --bg:#f4f6f8;
+      --card:#fff;
+      --primary:#2c82f2;
+      --danger:#e74c3c;
+    }
+    body { font-family: Inter, Arial, sans-serif; background-color: var(--bg); margin: 0; padding: 16px; display:flex; align-items:center; justify-content:center; min-height:100vh;}
+    .container { background-color: var(--card); padding: 1.25rem; border-radius: 12px; box-shadow: 0 6px 16px rgba(0,0,0,0.08); max-width: 600px; width:100%;}
+    h2{ text-align:center; color:#1f2937; margin:0 0 8px 0; font-size:1.1rem}
+    p{ font-size:0.95rem; color:#374151; line-height:1.5; margin:0 0 12px 0}
+    form{ display:flex; flex-direction:column; gap:8px}
+    label{ font-size:0.9rem}
+    input[type="text"], input[type="email"]{ padding:10px; border-radius:8px; border:1px solid #e5e7eb; font-size:0.95rem}
+    .consent-options{ display:flex; gap:12px; align-items:center; margin:6px 0}
+    button{ padding:12px; font-size:1rem; border:none; border-radius:10px; background:var(--primary); color:white; cursor:pointer}
+    button:disabled{ background:#9ca3af; cursor:not-allowed}
+    .alt-message{ margin-top:8px; font-size:0.9rem; color:var(--danger); text-align:center; display:none}
+    @media(min-width:700px){
+      .container{ padding:2rem}
+    }
+  </style>
+</head>
+<body>
+  <div class="container" role="main">
+    <h2>🛡 Informed Consent Form</h2>
+    <p>
+      By proceeding, you acknowledge:
+      <br> • Your facial image will be discarded immediately after biometric template creation.
+      <br> • Your biometric template will be collected for school security.
+      <br> • Data is stored locally, never shared externally.
+      <br> • Only authorized staff can access it.
+      <br> • Data is deleted when you leave the school.
+      <br> • You may withdraw consent or request deletion anytime.
+      <br> • For students under 18, parental consent is required.
+    </p>
+    <form id="consentForm" method="POST" action="/submit" aria-label="Consent form">
+      <label for="studentName">Student Full Name:</label>
+      <input type="text" id="studentName" name="studentName" required>
+
+      <label for="guardianName">Guardian Name:</label>
+      <input type="text" id="guardianName" name="guardianName">
+
+      <label for="guardianEmail">Guardian Email:</label>
+      <input type="email" id="guardianEmail" name="guardianEmail">
+
+      <div class="consent-options" role="radiogroup" aria-label="Consent">
+        <label><input type="radio" name="consent" value="agree" id="agree"> I consent</label>
+        <label><input type="radio" name="consent" value="disagree" id="disagree"> I do not consent</label>
+      </div>
+
+      <button id="submitBtn" type="submit" disabled>Submit & Proceed</button>
+    </form>
+
+    <div class="alt-message" id="altMessage">
+      You have declined consent. If you need help understanding this process, please ask for assistance nearby.
+    </div>
+  </div>
+    {% include 'dialogs.html' %}
+
+  <script>
+    const form = document.getElementById("consentForm");
+    const agreeRadio = document.getElementById("agree");
+    const disagreeRadio = document.getElementById("disagree");
+    const submitBtn = document.getElementById("submitBtn");
+    const altMessage = document.getElementById("altMessage");
+
+    function handleConsentChange() {
+      if (agreeRadio.checked) {
+        submitBtn.disabled = false;
+        altMessage.style.display = "none";
+      } else if (disagreeRadio.checked) {
+        submitBtn.disabled = true;
+        altMessage.style.display = "block";
+      }
+    }
+    document.querySelectorAll("input[name='consent']").forEach(option => { option.addEventListener("change", handleConsentChange); });
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const student = document.getElementById("studentName").value;
+      if (!student) { alert("Please enter student name."); return; }
+      form.submit();
+    });
+  </script>
+</body>
+</html>
