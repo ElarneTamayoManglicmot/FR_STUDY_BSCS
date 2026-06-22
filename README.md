@@ -1,8 +1,9 @@
-# FR_STUDY_BSCS
 A Thesis Study on Facial Recognition Performance (FRR/FAR) and Real-Time Processing Speeds.  This research-oriented implementation explores the intersection of Computer Vision and data analytics.
 
 User flow:
+
 <img width="710" height="375" alt="image" src="https://github.com/user-attachments/assets/ed924b99-8f49-4896-abcb-c126f49c35c3" />
+
 1. Registration:
    - User enters name, age, and gender in the registration form.
    - On submit, the page sends POST /register with the form data.
